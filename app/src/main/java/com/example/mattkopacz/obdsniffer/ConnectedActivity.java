@@ -56,6 +56,12 @@ public class ConnectedActivity extends AppCompatActivity {
     public StringBuilder recDataString = new StringBuilder();
 
 
+
+
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,13 +76,14 @@ public class ConnectedActivity extends AppCompatActivity {
 
         new ConnectBT().execute();
 
-        h = new Handler(){
+        h = new Handler() {
 
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
 
-                if (msg.what == handlerState){
+
+                if(msg.what == handlerState) {
 
                     byte[] rBuff = (byte[]) msg.obj; // recived message (bytes)
 
@@ -84,14 +91,15 @@ public class ConnectedActivity extends AppCompatActivity {
 
                     recDataString.append(readMessage);
 
-                    Log.d("Od2", recDataString.toString());
 
                     int startOfIndex = recDataString.indexOf("41 0C");
-                    int endOfIndex = recDataString.indexOf(">");
+                    int stopIndex = recDataString.indexOf(">");
 
-                    if (endOfIndex > 0) {
+                    if (stopIndex > 0) {
 
-                        String wiadomosc = recDataString.substring(startOfIndex + 17, endOfIndex);
+                        Log.d("Odczyt", String.valueOf(recDataString));
+
+                        String wiadomosc = recDataString.substring(startOfIndex + 17, stopIndex);
 
                         if (wiadomosc.contains(" ")) {
 
@@ -99,33 +107,30 @@ public class ConnectedActivity extends AppCompatActivity {
 
                         }
 
-                        BigInteger wartoscBig = new BigInteger(wiadomosc, 16);
+                        Log.d("Wiadomosc", wiadomosc);
+                        // 010C41 0C 18 41 41 0C 18 3B >
 
-                        int wartoscInt = wartoscBig.intValue();
+                        BigInteger bigInt = new BigInteger(wiadomosc, 16);
+                        int wartoscInt = bigInt.intValue();
+
+                        Log.d("Int", String.valueOf(wartoscInt));
 
                         double RPM = wartoscInt/4;
 
-                        Log.d("Wiadomosc", String.valueOf(wiadomosc));
-                        Log.d("Wartosc BIG", String.valueOf(wartoscBig));
-                        Log.d("Wartpsc INT", String.valueOf(wartoscInt));
-                        Log.d("Wartosc RPM", String.valueOf(RPM));
-                        Log.d("Start Index", String.valueOf(startOfIndex));
-                        Log.d("Stop Index", String.valueOf(endOfIndex));
-
-                        readValue.setText(recDataString.toString());
+                        Log.d("RPM", String.valueOf(RPM));
 
                         recDataString.delete(0, recDataString.length());
 
+                        readValue.setText(String.valueOf(RPM));
                     }
 
-                    //Log.d("Odczyt", readMessage);
 
 
-                    }
                 }
+            }
+
 
         };
-
     }
 
 
@@ -141,7 +146,7 @@ public class ConnectedActivity extends AppCompatActivity {
         if (mmSocket != null){
 
             try {
-                mmSocket.getOutputStream().write("010C\r".getBytes());
+                mmSocket.getOutputStream().write("010C\n".getBytes());
             } catch (IOException e) {
 
                 Log.e("Status", String.valueOf(e));
@@ -202,7 +207,10 @@ public class ConnectedActivity extends AppCompatActivity {
 
                     numBytes = mmInStream.read(mmBuffer);
 
-                    h.obtainMessage(handlerState, numBytes, -1, mmBuffer).sendToTarget();
+                    Message readMsg = h.obtainMessage(handlerState, numBytes, -1, mmBuffer);
+                    readMsg.sendToTarget();
+
+
 
 
 
